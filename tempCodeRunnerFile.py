@@ -1,2 +1,2 @@
-            consumption_list = consumption['energyDetails']['meters']
-            consumption = consumption_list[1]['values'][1]['value']
+testobject = apicalls(siteid,key,startdate,enddate,feedin_priceInCent, consumption_priceInCent)
+# testobject.getdata()
