@@ -14,8 +14,20 @@ month =  last_month.strftime("%m")
 
 consumption_priceInEuro = input("Bitte Cent pro kWh angeben - Eigenverbrauch (default: 25.99): ")
 feedin_priceInEuro = input("Bitte Cent pro kWh angeben - Einspeisung (default: 6.53): ")
-consumption_priceInEuro = (float(consumption_priceInEuro.replace(",",".")) if type(consumption_priceInEuro) == str and "," in consumption_priceInEuro else 25.99)/100
-feedin_priceInEuro = (float(feedin_priceInEuro.replace(",",".")) if type(feedin_priceInEuro) == str and "," in feedin_priceInEuro else 6.53)/100
+
+if type(consumption_priceInEuro) == str:
+    if "," in consumption_priceInEuro: consumption_priceInEuro = (float(consumption_priceInEuro.replace(",",".")))/100
+    elif feedin_priceInEuro == "": consumption_priceInEuro = 25.99/100
+    else: consumption_priceInEuro = float(consumption_priceInEuro)/100
+
+#consumption_priceInEuro = (float(consumption_priceInEuro.replace(",",".")) if type(consumption_priceInEuro) == str and "," in consumption_priceInEuro else consumption_priceInEuro)/100
+
+if type(feedin_priceInEuro) == str:
+    if "," in feedin_priceInEuro: feedin_priceInEuro = (float(feedin_priceInEuro.replace(",",".")))/100
+    elif feedin_priceInEuro == "": feedin_priceInEuro = 6.53/100
+    else: feedin_priceInEuro = float(feedin_priceInEuro)/100
+
+#feedin_priceInEuro = (float(feedin_priceInEuro.replace(",",".")) if type(feedin_priceInEuro) == str and "," in feedin_priceInEuro else 6.53)/100
 
 
 month = input("Bitte gewüschten Monat angeben (default: letzter Monat): ") or month
