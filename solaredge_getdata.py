@@ -14,20 +14,14 @@ month =  last_month.strftime("%m")
 
 consumption_priceInEuro = input("Bitte Cent pro kWh angeben - Eigenverbrauch (default: 25.99): ")
 feedin_priceInEuro = input("Bitte Cent pro kWh angeben - Einspeisung (default: 6.53): ")
-
 if type(consumption_priceInEuro) == str:
     if "," in consumption_priceInEuro: consumption_priceInEuro = (float(consumption_priceInEuro.replace(",",".")))/100
     elif feedin_priceInEuro == "": consumption_priceInEuro = 25.99/100
     else: consumption_priceInEuro = float(consumption_priceInEuro)/100
-
-#consumption_priceInEuro = (float(consumption_priceInEuro.replace(",",".")) if type(consumption_priceInEuro) == str and "," in consumption_priceInEuro else consumption_priceInEuro)/100
-
 if type(feedin_priceInEuro) == str:
     if "," in feedin_priceInEuro: feedin_priceInEuro = (float(feedin_priceInEuro.replace(",",".")))/100
     elif feedin_priceInEuro == "": feedin_priceInEuro = 6.53/100
     else: feedin_priceInEuro = float(feedin_priceInEuro)/100
-
-#feedin_priceInEuro = (float(feedin_priceInEuro.replace(",",".")) if type(feedin_priceInEuro) == str and "," in feedin_priceInEuro else 6.53)/100
 
 
 month = input("Bitte gewüschten Monat angeben (default: letzter Monat): ") or month
@@ -36,7 +30,6 @@ enddate="2022-" + str(month) + "-20" #any other day works as the unit is month a
 
 
 #note: every time a new object of class api_calls is created, the information in the brackets is passed to the __init__ function - parameters have to be defined globally for python to put the into the init function
-
 class apicalls:
 
     def __init__(self, siteid, key, startdate, enddate, feedin_priceInEuro, consumption_priceInEuro):
@@ -56,7 +49,7 @@ class apicalls:
             feedin_list = feedin['energyDetails']['meters']
             feedin = (feedin_list[0]['values'][0]['value'])/1000 #from Wh to kWh 
             feedin_money = feedin * float(feedin_priceInEuro) #from euro to ct
-            print("Deine Einnahmen durch die Einspeisung für den abgelaufenen Monat betragen: ", round(feedin_money,2), "€")
+            print(f"Deine Einnahmen durch die Einspeisung für den abgelaufenen Monat betragen bei {round(feedin_priceInEuro*100,2)} ct/kWh: ", round(feedin_money,2), "€")
             print("Du hast ",round(feedin,2)," kWh eingespeist!")
 
     def getselfcon(self):
@@ -67,7 +60,7 @@ class apicalls:
             selfcon_list = selfcon['energyDetails']['meters']
             selfcon = (selfcon_list[0]['values'][0]['value'])/1000 #consumption = selfconsumption
             consumption_money = selfcon * float(consumption_priceInEuro)
-            print("Deine Kosten für den Eigenverbrauch für den abgelaufenen Monat betragen: ", round(consumption_money,2), "€")
+            print(f"Deine Kosten für den Eigenverbrauch für den abgelaufenen Monat betragen bei {round(consumption_priceInEuro*100,2)} ct/kWh: ", round(consumption_money,2), "€")
             print("Du hast ",round(selfcon,2)," kWh selber verbraucht!")
 
 
