@@ -1,2 +1,3 @@
-testobject = apicalls(siteid,key,startdate,enddate,feedin_priceInCent, consumption_priceInCent)
-# testobject.getdata()
+accounting = apicalls(siteid,key,startdate,enddate,feedin_priceInEuro, consumption_priceInEuro)
+accounting.getselfcon()
+accounting.getfeedin()
