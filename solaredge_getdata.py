@@ -54,27 +54,32 @@ class apicalls:
         self.consumption_price_in_euro = consumption_price_in_euro
 
     def get_feedin(self):
-        urlfeedin = "https://monitoringapi.solaredge.com/site/" + self.siteid + "/energyDetails?meters=FEEDIN&timeUnit=MONTH&startTime=" + self.startdate + " 00:00:00&endTime=" + self.enddate + " 00:00:00&api_key=" + self.key #unit = MONTH, idea: import library to automatically switch to new month (with right number of days)
-        feedin = requests.get(urlfeedin)  
-        if feedin.status_code == 200:
-            feedin = feedin.json()
-            feedin_list = feedin['energyDetails']['meters']
-            feedin = (feedin_list[0]['values'][0]['value']) / 1000 # from Wh to kWh 
-            feedin_money = feedin * float(self.feedin_price_in_euro)
-            print(f"Deine Einnahmen durch die Einspeisung für den abgelaufenen Monat betragen bei {round(self.feedin_price_in_euro * 100, 2)} ct/kWh: {round(feedin_money, 2)} € netto")
-            print(f"Du hast {round(feedin, 2)} kWh eingespeist!")
-
+        url_feedin = "https://monitoringapi.solaredge.com/site/" + self.siteid + "/energyDetails?meters=FEEDIN&timeUnit=MONTH&startTime=" + self.startdate + " 00:00:00&endTime=" + self.enddate + " 00:00:00&api_key=" + self.key #unit = MONTH, idea: import library to automatically switch to new month (with right number of days)
+        feedin = requests.get(url_feedin)  
+        assert feedin.status_code == 200
+        feedin = feedin.json()
+        feedin_list = feedin['energyDetails']['meters']
+        feedin = (feedin_list[0]['values'][0]['value']) / 1000 # from Wh to kWh
+        print(f"feedin: {feedin}")
+        feedin_money = feedin * float(self.feedin_price_in_euro)
+        print(f"feedin_money: {feedin_money}")
+        print(f"Deine Einnahmen durch die Einspeisung für den abgelaufenen Monat betragen bei {round(self.feedin_price_in_euro * 100, 2)} ct/kWh {round(feedin_money, 2)} € netto")
+        print(f"Du hast {round(feedin, 2)} kWh eingespeist!")
 
     def get_self_consumption(self):
-        urlself_consumption = "https://monitoringapi.solaredge.com/site/" + self.siteid + "/energyDetails?meters=self_consumptionSUMPTION&timeUnit=MONTH&startTime=" + self.startdate + " 00:00:00&endTime=" + self.enddate + " 00:00:00&api_key=" + self.key #unit = MONTH, idea: import library to automatically switch to new month (with right number of days)
-        self_consumption = requests.get(urlself_consumption)
-        if self_consumption.status_code == 200:
-            self_consumption = self_consumption.json()
-            self_consumption_list = self_consumption['energyDetails']['meters']
-            self_consumption = (self_consumption_list[0]['values'][0]['value']) / 1000 # consumption = self_consumptionsumption
-            consumption_money = self_consumption * float(self.consumption_price_in_euro)
-            print(f"Deine Kosten für den Eigenverbrauch für den abgelaufenen Monat betragen bei {round(self.consumption_price_in_euro*100, 2)} ct/kWh {round(consumption_money, 2)} € netto")
-            print(f"Du hast {round(self_consumption, 2)} kWh selber verbraucht!")
+        url_self_consumption = "https://monitoringapi.solaredge.com/site/" + self.siteid + "/energyDetails?meters=SELFCONSUMPTION&timeUnit=MONTH&startTime=" + self.startdate + " 00:00:00&endTime=" + self.enddate + " 00:00:00&api_key=" + self.key #unit = MONTH, idea: import library to automatically switch to new month (with right number of days)
+        self_consumption = requests.get(url_self_consumption)
+        print("status code:", self_consumption.status_code)
+        assert self_consumption.status_code == 200
+        self_consumption = self_consumption.json()
+        # print(self_consumption)
+        self_consumption_list = self_consumption['energyDetails']['meters']
+        self_consumption = (self_consumption_list[0]['values'][0]['value']) / 1000 # consumption = self_consumption
+        print(f"self_consumption: {self_consumption}")
+        consumption_money = self_consumption * float(self.consumption_price_in_euro)
+        print(f"consumption_money: {consumption_money}")
+        print(f"Deine Kosten für den Eigenverbrauch für den abgelaufenen Monat betragen bei {round(self.consumption_price_in_euro*100, 2)} ct/kWh {round(consumption_money, 2)} € netto")
+        print(f"Du hast {round(self_consumption, 2)} kWh selber verbraucht!")
 
 
 def save_to_excel():
@@ -87,8 +92,8 @@ def main():
     startdate, enddate = get_timewindow(month)
     feedin_price_in_euro, consumption_price_in_euro = get_parameters()
     accounting = apicalls(siteid, key, startdate, enddate, feedin_price_in_euro, consumption_price_in_euro)
-    accounting.get_self_consumption()
-    accounting.get_feedin()
-    return accounting
+    self_consumption = accounting.get_self_consumption()
+    # feedin = accounting.get_feedin()
+    return self_consumption
 
 main()
