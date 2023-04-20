@@ -1,11 +1,12 @@
 import requests
 import datetime
+import json
 from openpyxl import Workbook, load_workbook
 
-accesstoken_github = "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"
+ACCESSTOKEN_GITHUB = "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"
 
-siteid = "2710924" #location
-key = "1KP4K9CZOFOS9XZU3ZXHWM24RJTXCWAL"
+SITEID = "2710924" #location
+KEY = "1KP4K9CZOFOS9XZU3ZXHWM24RJTXCWAL"
 
 def get_last_month():
     today = datetime.date.today()
@@ -15,6 +16,7 @@ def get_last_month():
     return last_month
 
 def get_timewindow(month):
+    year = datetime.datetime.today().year
     while True:
         month = input(f"Bitte gewüschten Monat angeben (default: letzter Monat - hier {month}): ") or month
         if month.isdigit():
@@ -25,8 +27,8 @@ def get_timewindow(month):
                 print("You must enter a number from 1 - 12. ")
         else: 
             print("You must enter a number. ")
-    startdate="2022-" + str(month) + "-01"
-    enddate="2022-" + str(month) + "-20"    # any other day works as the unit is month anyway
+    startdate = f"{year}-{str(month)}-01" # year variable -> datetime object
+    enddate = f"{year}-{str(month)}-04"    # any other day works as the unit is month anyway
     return startdate, enddate
 
 def get_parameters():
@@ -45,42 +47,61 @@ def get_parameters():
 # note: every time a new object of class api_calls is created, the information in the brackets is passed to the __init__ function - parameters have to be defined globally for python to put the into the init function
 class apicalls:
 
-    def __init__(self, siteid, key, startdate, enddate, feedin_price_in_euro, consumption_price_in_euro):
-        self.siteid = siteid
-        self.key = key
+    def __init__(self, SITEID, KEY, startdate, enddate, feedin_price_in_euro, consumption_price_in_euro):
+        self.SITEID = SITEID
+        self.KEY = KEY
         self.startdate = startdate
         self.enddate = enddate
         self.feedin_price_in_euro = feedin_price_in_euro
         self.consumption_price_in_euro = consumption_price_in_euro
 
-    def get_feedin(self):
-        url_feedin = "https://monitoringapi.solaredge.com/site/" + self.siteid + "/energyDetails?meters=FEEDIN&timeUnit=MONTH&startTime=" + self.startdate + " 00:00:00&endTime=" + self.enddate + " 00:00:00&api_key=" + self.key #unit = MONTH, idea: import library to automatically switch to new month (with right number of days)
-        feedin = requests.get(url_feedin)  
+    def get_feedin_with_unit_month(self):
+        url_feedin = f"https://monitoringapi.solaredge.com/site/{self.SITEID}/energyDetails?meters=FEEDIN&timeUnit=MONTH&startTime={self.startdate}%2011:00:00&endTime={self.enddate}%2013:00:00&api_key={self.KEY}"
+        feedin = requests.get(url_feedin)
         assert feedin.status_code == 200
         feedin = feedin.json()
         feedin_list = feedin['energyDetails']['meters']
         feedin = (feedin_list[0]['values'][0]['value']) / 1000 # from Wh to kWh
-        print(f"feedin: {feedin}")
         feedin_money = feedin * float(self.feedin_price_in_euro)
-        print(f"feedin_money: {feedin_money}")
-        print(f"Deine Einnahmen durch die Einspeisung für den abgelaufenen Monat betragen bei {round(self.feedin_price_in_euro * 100, 2)} ct/kWh {round(feedin_money, 2)} € netto")
-        print(f"Du hast {round(feedin, 2)} kWh eingespeist!")
+        print(f"Einspeisung: {round(feedin, 2)} kWh")
+        print(f"Einnahmen Einspeisung: {round(feedin_money, 2)} € netto")
+        return feedin, self.feedin_price_in_euro, feedin_money
 
-    def get_self_consumption(self):
-        url_self_consumption = "https://monitoringapi.solaredge.com/site/" + self.siteid + "/energyDetails?meters=SELFCONSUMPTION&timeUnit=MONTH&startTime=" + self.startdate + " 00:00:00&endTime=" + self.enddate + " 00:00:00&api_key=" + self.key #unit = MONTH, idea: import library to automatically switch to new month (with right number of days)
+    def get_self_consumption_with_unit_month(self):
+        url_self_consumption = f"https://monitoringapi.solaredge.com/site/{self.SITEID}/energyDetails?meters=SELFCONSUMPTION&timeUnit=MONTH&startTime={self.startdate}%2011:00:00&endTime={self.enddate}%2013:00:00&api_key={self.KEY}"
         self_consumption = requests.get(url_self_consumption)
-        print("status code:", self_consumption.status_code)
         assert self_consumption.status_code == 200
         self_consumption = self_consumption.json()
-        # print(self_consumption)
         self_consumption_list = self_consumption['energyDetails']['meters']
-        self_consumption = (self_consumption_list[0]['values'][0]['value']) / 1000 # consumption = self_consumption
-        print(f"self_consumption: {self_consumption}")
+        self_consumption = (self_consumption_list[0]['values'][0]['value']) / 1000
+        print(f"Eigenverbrauch: {round(self_consumption, 2)} kWh")
         consumption_money = self_consumption * float(self.consumption_price_in_euro)
-        print(f"consumption_money: {consumption_money}")
-        print(f"Deine Kosten für den Eigenverbrauch für den abgelaufenen Monat betragen bei {round(self.consumption_price_in_euro*100, 2)} ct/kWh {round(consumption_money, 2)} € netto")
-        print(f"Du hast {round(self_consumption, 2)} kWh selber verbraucht!")
-
+        print(f"Kosten Eigenverbrauch: {round(consumption_money, 2)} € netto")
+        return self_consumption, self.consumption_price_in_euro, consumption_money
+    
+    def get_parameters_for_excel_file_with_unit_day(self):
+        url_parameters = f"https://monitoringapi.solaredge.com/site/{self.SITEID}/energyDetails?meters=SELFCONSUMPTION,CONSUMPTION,PRODUCTION,FEEDIN,PURCHASED&timeUnit=DAY&startTime={self.startdate}%2011:00:00&endTime={self.enddate}%2013:00:00&api_key={self.KEY}"
+        parameters = requests.get(url_parameters).json()
+        values_production, values_consumption, values_purchased, values_feedin, values_self_consumption = [], [], [], [], []
+        meters = parameters['energyDetails']['meters']
+        for i in range(len(meters)):
+            if meters[i]["type"] == "Production":
+                values_production = [meters[i]["values"][day]["value"] for day in range(len(meters[i]["values"]))]
+                continue
+            if meters[i]["type"] == "Consumption":
+                values_consumption = [meters[i]["values"][day]["value"] for day in range(len(meters[i]["values"]))]
+                continue
+            if meters[i]["type"] == "Purchased":
+                values_purchased = [meters[i]["values"][day]["value"] for day in range(len(meters[i]["values"]))]
+                continue
+            if meters[i]["type"] == "FeedIn":
+                values_feedin = [meters[i]["values"][day]["value"] for day in range(len(meters[i]["values"]))]
+                continue
+            if meters[i]["type"] == "SelfConsumption":
+                values_self_consumption = [meters[i]["values"][day]["value"] for day in range(len(meters[i]["values"]))]
+                continue
+        # print(json.dumps(parameters, indent = 4))
+        # create dataframe
 
 def save_to_excel():
     wb = Workbook()
@@ -91,9 +112,10 @@ def main():
     month = get_last_month()
     startdate, enddate = get_timewindow(month)
     feedin_price_in_euro, consumption_price_in_euro = get_parameters()
-    accounting = apicalls(siteid, key, startdate, enddate, feedin_price_in_euro, consumption_price_in_euro)
-    self_consumption = accounting.get_self_consumption()
-    # feedin = accounting.get_feedin()
-    return self_consumption
+    accounting = apicalls(SITEID, KEY, startdate, enddate, feedin_price_in_euro, consumption_price_in_euro)
+    # accounting.get_feedin_with_unit_month()
+    # accounting.get_self_consumption_with_unit_month()
+    accounting.get_parameters_for_excel_file_with_unit_day()
+    return
 
 main()
